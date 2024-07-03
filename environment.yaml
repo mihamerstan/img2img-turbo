@@ -33,3 +33,5 @@ dependencies:
       - dominate
       - diffusers==0.25.1
       - gradio==3.43.1
+      - vision-aided-loss==0.1.0
+      - wandb==0.17.3
