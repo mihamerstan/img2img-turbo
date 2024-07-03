@@ -45,8 +45,10 @@ class VAE_decode(nn.Module):
         return x_decoded
 
 
-def initialize_unet(rank, return_lora_module_names=False):
-    unet = UNet2DConditionModel.from_pretrained("/home/michael/model_checkpoints/sd_turbo_checkpoints", subfolder="unet")
+def initialize_unet(rank, pretrained_model_name_or_path=None, return_lora_module_names=False):
+    if pretrained_model_name_or_path is None:
+        pretrained_model_name_or_path = "stabilityai/sd-turbo"
+    unet = UNet2DConditionModel.from_pretrained(pretrained_model_name_or_path, subfolder="unet")
     unet.requires_grad_(False)
     unet.train()
     l_target_modules_encoder, l_target_modules_decoder, l_modules_others = [], [], []
@@ -76,8 +78,10 @@ def initialize_unet(rank, return_lora_module_names=False):
         return unet
 
 
-def initialize_vae(rank=4, return_lora_module_names=False):
-    vae = AutoencoderKL.from_pretrained("/home/michael/model_checkpoints/sd_turbo_checkpoints", subfolder="vae")
+def initialize_vae(rank=4, pretrained_model_name_or_path=None, return_lora_module_names=False):
+    if pretrained_model_name_or_path is None:
+        pretrained_model_name_or_path = "stabilityai/sd-turbo"
+    vae = AutoencoderKL.from_pretrained(pretrained_model_name_or_path, subfolder="vae")
     vae.requires_grad_(False)
     vae.encoder.forward = my_vae_encoder_fwd.__get__(vae.encoder, vae.encoder.__class__)
     vae.decoder.forward = my_vae_decoder_fwd.__get__(vae.decoder, vae.decoder.__class__)
@@ -107,13 +111,15 @@ def initialize_vae(rank=4, return_lora_module_names=False):
 
 
 class CycleGAN_Turbo(torch.nn.Module):
-    def __init__(self, pretrained_name=None, pretrained_path=None, ckpt_folder="checkpoints", lora_rank_unet=8, lora_rank_vae=4):
+    def __init__(self, pretrained_name=None, pretrained_path=None, local_pickle=None, ckpt_folder="checkpoints", lora_rank_unet=8, lora_rank_vae=4):
         super().__init__()
-        self.tokenizer = AutoTokenizer.from_pretrained("stabilityai/sd-turbo", subfolder="tokenizer")
-        self.text_encoder = CLIPTextModel.from_pretrained("/home/michael/model_checkpoints/sd_turbo_checkpoints", subfolder="text_encoder").cuda()
+        if pretrained_path is None:
+            pretrained_path = "stabilityai/sd-turbo"
+        self.tokenizer = AutoTokenizer.from_pretrained(pretrained_path, subfolder="tokenizer")
+        self.text_encoder = CLIPTextModel.from_pretrained(pretrained_path, subfolder="text_encoder").cuda()
         self.sched = make_1step_sched()
-        vae = AutoencoderKL.from_pretrained("/home/michael/model_checkpoints/sd_turbo_checkpoints", subfolder="vae")
-        unet = UNet2DConditionModel.from_pretrained("/home/michael/model_checkpoints/sd_turbo_checkpoints", subfolder="unet")
+        vae = AutoencoderKL.from_pretrained(pretrained_path, subfolder="vae")
+        unet = UNet2DConditionModel.from_pretrained(pretrained_path, subfolder="unet")
         vae.encoder.forward = my_vae_encoder_fwd.__get__(vae.encoder, vae.encoder.__class__)
         vae.decoder.forward = my_vae_decoder_fwd.__get__(vae.decoder, vae.decoder.__class__)
         # add the skip connection convs
@@ -124,10 +130,11 @@ class CycleGAN_Turbo(torch.nn.Module):
         vae.decoder.ignore_skip = False
         self.unet, self.vae = unet, vae
         if pretrained_name == "day_to_night":
-            # url = "https://www.cs.cmu.edu/~img2img-turbo/models/day2night.pkl"
-            # self.load_ckpt_from_url(url, ckpt_folder)
-            local_path = "/home/michael/ucdavis/img2img-turbo/checkpoints/day2night.pkl"
-            self.load_ckpt_from_local(local_path=local_path)
+            if local_pickle is not None:
+                self.load_ckpt_from_local(local_path=local_pickle)
+            else:
+                url = "https://www.cs.cmu.edu/~img2img-turbo/models/day2night.pkl"
+                self.load_ckpt_from_url(url, ckpt_folder)
             self.timesteps = torch.tensor([999], device="cuda").long()
             self.caption = "driving in the night"
             self.direction = "a2b"

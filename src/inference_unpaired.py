@@ -13,6 +13,7 @@ if __name__ == "__main__":
     parser.add_argument('--prompt', type=str, required=False, help='the prompt to be used. It is required when loading a custom model_path.')
     parser.add_argument('--model_name', type=str, default=None, help='name of the pretrained model to be used')
     parser.add_argument('--model_path', type=str, default=None, help='path to a local model state dict to be used')
+    parser.add_argument('--local_pickle', type=str, default=None, help='path to a local day_to_night pickle file')
     parser.add_argument('--output_dir', type=str, default='output', help='the directory to save the output')
     parser.add_argument('--image_prep', type=str, default='resize_512x512', help='the image preparation method')
     parser.add_argument('--direction', type=str, default=None, help='the direction of translation. None for pretrained models, a2b or b2a for custom paths.')
@@ -30,7 +31,7 @@ if __name__ == "__main__":
         assert args.direction is None, 'direction is not required when loading a pretrained model.'
 
     # initialize the model
-    model = CycleGAN_Turbo(pretrained_name=args.model_name, pretrained_path=args.model_path)
+    model = CycleGAN_Turbo(pretrained_name=args.model_name, pretrained_path=args.model_path, local_pickle=args.local_pickle)
     model.eval()
     model.unet.enable_xformers_memory_efficient_attention()
 
