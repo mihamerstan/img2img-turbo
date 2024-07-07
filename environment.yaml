@@ -5,7 +5,7 @@ channels:
   - defaults
 dependencies:
   - python=3.10
-  - torch==2.1.0
+  - pytorch==2.1.0+cu121
   - pytorch-cuda=12.1
   - torchvision==0.15.2
   - torchaudio==2.0.2
