@@ -7,12 +7,9 @@ pillow>=9.5.0
 scipy==1.11.1
 timm>=0.9.2
 tokenizers
-torch>=2.0.1
 
-torchaudio>=2.0.2
 torchdata==0.6.1
 torchmetrics>=1.0.1
-torchvision>=0.15.2
 
 tqdm>=4.65.0
 transformers==4.35.2
@@ -26,3 +23,5 @@ peft
 dominate
 diffusers==0.25.1
 gradio==3.43.1
+vision-aided-loss==0.1.0
+wandb==0.17.3
