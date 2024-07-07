@@ -105,6 +105,16 @@ We tightly integrate three separate modules in the original latent diffusion mod
   source venv/bin/activate
   pip install -r requirements.txt
   ```
+- Michael update: To run on a remote machine, I had to install cuda alongside pytorch like this:
+  ```
+  conda create --name img2img-turbo -y python=3.10
+  conda activate img2img-turbo
+  conda install -c "nvidia/label/cuda-11.8.0" cuda-toolkit -y
+  pip install torch==2.0.1+cu118 torchvision==0.15.2+cu118 --extra-index-url https://download.pytorch.org/whl/cu118
+  pip install -r requirements.txt
+  ```
+- Note that `requirements.txt` should have `torch`, `torchvision`, and `torchaudio` removed before running the last step (I have done that already in this repo).
+
 **Paired Image Translation (pix2pix-turbo)**
 - The following command takes an image file and a prompt as inputs, extracts the canny edges, and saves the results in the directory specified.
     ```bash
