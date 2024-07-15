@@ -113,13 +113,16 @@ def initialize_vae(rank=4, pretrained_model_name_or_path=None, return_lora_modul
 class CycleGAN_Turbo(torch.nn.Module):
     def __init__(self, pretrained_name=None, pretrained_path=None, local_pickle=None, ckpt_folder="checkpoints", lora_rank_unet=8, lora_rank_vae=4):
         super().__init__()
-        if pretrained_path is None:
-            pretrained_path = "stabilityai/sd-turbo"
-        self.tokenizer = AutoTokenizer.from_pretrained(pretrained_path, subfolder="tokenizer")
-        self.text_encoder = CLIPTextModel.from_pretrained(pretrained_path, subfolder="text_encoder").cuda()
+        # if pretrained_path is None:
+        #     pretrained_path = "stabilityai/sd-turbo"
+        self.tokenizer = AutoTokenizer.from_pretrained("stabilityai/sd-turbo", subfolder="tokenizer")
+        self.text_encoder = CLIPTextModel.from_pretrained("/home/michael/model_checkpoints/sd_turbo_checkpoints", subfolder="text_encoder").cuda()
+        # self.text_encoder = CLIPTextModel.from_pretrained(pretrained_path, subfolder="text_encoder").cuda()
         self.sched = make_1step_sched()
-        vae = AutoencoderKL.from_pretrained(pretrained_path, subfolder="vae")
-        unet = UNet2DConditionModel.from_pretrained(pretrained_path, subfolder="unet")
+        vae = AutoencoderKL.from_pretrained("/home/michael/model_checkpoints/sd_turbo_checkpoints", subfolder="vae")
+        unet = UNet2DConditionModel.from_pretrained("/home/michael/model_checkpoints/sd_turbo_checkpoints", subfolder="unet")
+        # vae = AutoencoderKL.from_pretrained(pretrained_path, subfolder="vae")
+        # unet = UNet2DConditionModel.from_pretrained(pretrained_path, subfolder="unet")
         vae.encoder.forward = my_vae_encoder_fwd.__get__(vae.encoder, vae.encoder.__class__)
         vae.decoder.forward = my_vae_decoder_fwd.__get__(vae.decoder, vae.decoder.__class__)
         # add the skip connection convs
@@ -129,12 +132,26 @@ class CycleGAN_Turbo(torch.nn.Module):
         vae.decoder.skip_conv_4 = torch.nn.Conv2d(128, 256, kernel_size=(1, 1), stride=(1, 1), bias=False).cuda()
         vae.decoder.ignore_skip = False
         self.unet, self.vae = unet, vae
-        if pretrained_name == "day_to_night":
+        if pretrained_name == "borden_night":
             if local_pickle is not None:
                 self.load_ckpt_from_local(local_path=local_pickle)
+                self.timesteps = torch.tensor([999], device="cuda").long()
+                self.caption = "borden_night"
+                self.direction = "a2b"
             else:
-                url = "https://www.cs.cmu.edu/~img2img-turbo/models/day2night.pkl"
-                self.load_ckpt_from_url(url, ckpt_folder)
+                raise ValueError("model ckpt must be passed if pretrained_name = borden_night.")
+            
+        elif pretrained_name == "day_to_night":
+            # url = "https://www.cs.cmu.edu/~img2img-turbo/models/day2night.pkl"
+            # self.load_ckpt_from_url(url, ckpt_folder)
+            local_path = "/home/michael/ucdavis/img2img-turbo/checkpoints/day2night.pkl"
+            self.load_ckpt_from_local(local_path=local_path)
+            # if local_pickle is not None:
+            #     self.load_ckpt_from_local(local_path=local_pickle)
+            # else:
+            #     url = "https://www.cs.cmu.edu/~img2img-turbo/models/day2night.pkl"
+            #     self.load_ckpt_from_url(url, ckpt_folder)
+            
             self.timesteps = torch.tensor([999], device="cuda").long()
             self.caption = "driving in the night"
             self.direction = "a2b"
